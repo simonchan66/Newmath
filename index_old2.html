@@ -96,12 +96,6 @@
     }
     .btn:active{ transform: translateY(1px); }
 
-    .btn.danger{
-      border-color: rgba(255,77,109,.4);
-      background: rgba(255,77,109,.15);
-      color: #ff99aa;
-    }
-
     .main{
       flex: 1;
       min-height: 0;
@@ -619,13 +613,6 @@
       transition: width 400ms ease;
     }
 
-    .settings-row{
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
-        width: 100%;
-    }
-
     @media (max-height: 700px){
       .expr{ font-size: 30px; }
       .pad{ gap: 8px; }
@@ -646,7 +633,7 @@
     <header>
       <div class="title">
         <h1>Multiply! (2–10)</h1>
-        <div class="sub">Fast practice · 明快 feedback · Collect 50 cards! 🎴</div>
+        <div class="sub">Fast practice · 明快 feedback · Collect cards! 🎴</div>
       </div>
 
       <div class="pillRow">
@@ -657,7 +644,7 @@
         <div class="pill" title="Streak">
           <span>🔥</span><span id="streak">0</span>
         </div>
-        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/50)</button>
+        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/20)</button>
         <button class="btn" id="newBtn" type="button">New</button>
       </div>
     </header>
@@ -728,13 +715,10 @@
       </div>
       <div class="modal-body">
         <div class="collection-info">
-          <div class="big"><span id="modalCardCount">0</span>/50</div>
+          <div class="big"><span id="modalCardCount">0</span>/20</div>
           <div class="label">Cards Collected · Keep playing to unlock more!</div>
         </div>
         <div class="card-grid" id="cardGrid"></div>
-        <div class="settings-row">
-            <button class="btn danger" id="resetBtn" type="button">⚠️ Reset All Progress</button>
-        </div>
       </div>
     </div>
   </div>
@@ -788,7 +772,6 @@
   const cardGrid = el('cardGrid');
   const cardCountEl = el('cardCount');
   const modalCardCount = el('modalCardCount');
-  const resetBtn = el('resetBtn');
 
   const cardReward = el('cardReward');
   const rewardCardImg = el('rewardCardImg');
@@ -808,24 +791,12 @@
   let locked = false;
   let muted = false;
 
-  const TOTAL_CARDS = 50;
+  const TOTAL_CARDS = 20;
 
-  // First 4 cards follow custom easy path
-  // Card 1: 500
-  // Card 2: 1500
-  // Card 3: 2800
-  // Card 4: 4100
-  // From Card 5 onwards: +2000 each time (6100, 8100, etc.)
   const CARD_MILESTONES = [
-    500, 1500, 2800, 4100
+    500, 1500, 2800, 4100, 6100, 8100, 10100, 12100, 14100, 16100, 
+    18100, 20100, 22100, 24100, 26100, 28100, 30100, 32100, 34100, 36100
   ];
-
-  // Generate the rest up to 50 cards
-  let lastMilestone = 4100;
-  for (let i = 4; i < TOTAL_CARDS; i++) {
-    lastMilestone += 2000;
-    CARD_MILESTONES.push(lastMilestone);
-  }
 
   // Sound System (Web Audio API)
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -851,9 +822,11 @@
 
   const sfx = {
     click: () => {
+      // Short high tick
       playTone(800, 'sine', 0.05, 0.05);
     },
     correct: () => {
+      // "Ding" - high coin sound
       if (muted) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -863,7 +836,7 @@
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1200, t);
-      osc.frequency.exponentialRampToValueAtTime(1800, t + 0.1); 
+      osc.frequency.exponentialRampToValueAtTime(1800, t + 0.1); // Pitch slide up
 
       gain.gain.setValueAtTime(0.2, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
@@ -873,6 +846,7 @@
       osc.start();
       osc.stop(t + 0.5);
 
+      // Secondary harmonic for sparkle
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'triangle';
@@ -885,18 +859,16 @@
       osc2.stop(t + 0.3);
     },
     wrong: () => {
+      // "Buzz" - low saw
       playTone(150, 'sawtooth', 0.4, 0.15);
     },
     win: () => {
+      // Fanfare: C E G C
       if (muted) return;
       const now = audioCtx.currentTime;
       [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
         setTimeout(() => playTone(freq, 'square', 0.4, 0.1), i * 120);
       });
-    },
-    reset: () => {
-        playTone(300, 'sawtooth', 0.3, 0.2);
-        setTimeout(() => playTone(200, 'sawtooth', 0.4, 0.2), 200);
     }
   };
 
@@ -907,8 +879,6 @@
         const data = JSON.parse(saved);
         score = data.score || 0;
         collectedCards = data.collectedCards || [];
-        // Ensure collectedCards is valid
-        if (!Array.isArray(collectedCards)) collectedCards = [];
         return true;
       }
     } catch(e) {}
@@ -928,23 +898,6 @@
 
   let collectedCards = [];
   loadProgress();
-
-  function resetProgress() {
-    if (!confirm("Are you sure you want to delete all progress? This cannot be undone.")) return;
-
-    score = 0;
-    collectedCards = [];
-    streak = 0;
-    localStorage.removeItem('mathGameProgress');
-
-    scoreEl.textContent = "0";
-    streakEl.textContent = "0";
-    updateCardCount();
-    updateProgressBar();
-    renderCardGrid();
-    sfx.reset();
-    toast("All progress reset!");
-  }
 
   function updateCardCount(){
     cardCountEl.textContent = collectedCards.length;
@@ -974,7 +927,7 @@
       collectedCards.push(newCardNumber);
       saveProgress();
       updateCardCount();
-      sfx.win();
+      sfx.win(); // Fanfare sound!
       showCardReward(newCardNumber);
     }
   }
@@ -1253,11 +1206,7 @@
     hideCardReward();
   });
 
-  resetBtn.addEventListener('click', () => {
-    sfx.click();
-    resetProgress();
-  });
-
+  // Resume AudioContext on first interaction
   document.addEventListener('click', () => {
     if (audioCtx.state === 'suspended') audioCtx.resume();
   }, { once: true });
