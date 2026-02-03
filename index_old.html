@@ -637,7 +637,6 @@
       </div>
 
       <div class="pillRow">
-        <button class="btn" id="muteBtn" type="button">🔊</button>
         <div class="pill" title="Score">
           <span>⭐</span><span id="score">0</span>
         </div>
@@ -764,7 +763,6 @@
   const clearBtn = el('clearBtn');
   const modeBtn = el('modeBtn');
   const pad = el('pad');
-  const muteBtn = el('muteBtn');
 
   const collectionBtn = el('collectionBtn');
   const collectionModal = el('collectionModal');
@@ -789,89 +787,34 @@
   let score = 0;
   let streak = 0;
   let locked = false;
-  let muted = false;
 
   const TOTAL_CARDS = 20;
 
+  // Progressive milestones: easier at first, then every 2000
   const CARD_MILESTONES = [
-    500, 1500, 2800, 4100, 6100, 8100, 10100, 12100, 14100, 16100, 
-    18100, 20100, 22100, 24100, 26100, 28100, 30100, 32100, 34100, 36100
+    500,   // Card 1
+    1500,  // Card 2
+    2800,  // Card 3
+    4100,  // Card 4
+    6100,  // Card 5
+    8100,  // Card 6
+    10100, // Card 7
+    12100, // Card 8
+    14100, // Card 9
+    16100, // Card 10
+    18100, // Card 11
+    20100, // Card 12
+    22100, // Card 13
+    24100, // Card 14
+    26100, // Card 15
+    28100, // Card 16
+    30100, // Card 17
+    32100, // Card 18
+    34100, // Card 19
+    36100  // Card 20
   ];
 
-  // Sound System (Web Audio API)
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-  function playTone(freq, type, duration, vol=0.1) {
-    if (muted) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  }
-
-  const sfx = {
-    click: () => {
-      // Short high tick
-      playTone(800, 'sine', 0.05, 0.05);
-    },
-    correct: () => {
-      // "Ding" - high coin sound
-      if (muted) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      const t = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1200, t);
-      osc.frequency.exponentialRampToValueAtTime(1800, t + 0.1); // Pitch slide up
-
-      gain.gain.setValueAtTime(0.2, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(t + 0.5);
-
-      // Secondary harmonic for sparkle
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(2400, t);
-      gain2.gain.setValueAtTime(0.05, t);
-      gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.start();
-      osc2.stop(t + 0.3);
-    },
-    wrong: () => {
-      // "Buzz" - low saw
-      playTone(150, 'sawtooth', 0.4, 0.15);
-    },
-    win: () => {
-      // Fanfare: C E G C
-      if (muted) return;
-      const now = audioCtx.currentTime;
-      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-        setTimeout(() => playTone(freq, 'square', 0.4, 0.1), i * 120);
-      });
-    }
-  };
-
+  // Load progress from localStorage (works in Safari iOS)
   function loadProgress(){
     try {
       const saved = localStorage.getItem('mathGameProgress');
@@ -881,7 +824,9 @@
         collectedCards = data.collectedCards || [];
         return true;
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log('Could not load progress:', e);
+    }
     return false;
   }
 
@@ -893,7 +838,9 @@
         lastSaved: new Date().toISOString()
       };
       localStorage.setItem('mathGameProgress', JSON.stringify(data));
-    } catch(e) {}
+    } catch(e) {
+      console.log('Could not save progress:', e);
+    }
   }
 
   let collectedCards = [];
@@ -927,7 +874,6 @@
       collectedCards.push(newCardNumber);
       saveProgress();
       updateCardCount();
-      sfx.win(); // Fanfare sound!
       showCardReward(newCardNumber);
     }
   }
@@ -943,7 +889,6 @@
   }
 
   function showCardDetail(cardNum){
-    sfx.click();
     cardDetailImg.src = `card/${cardNum}.png`;
     cardDetailNumber.textContent = `Card #${cardNum}`;
     cardDetailOverlay.classList.add('show');
@@ -1090,7 +1035,6 @@
       msgEl.textContent = "Correct! 🎉";
       bonusEl.textContent = `+${pts.total} (base ${pts.base}${pts.extra ? ` + streak ${pts.extra}` : ""})`;
 
-      sfx.correct(); // Play success sound
       showScorePopup(pts.total);
       updateProgressBar();
       burstConfetti();
@@ -1101,7 +1045,6 @@
         nextProblem();
       }, 520);
     } else {
-      sfx.wrong(); // Play error sound
       streak = 0;
       streakEl.textContent = streak;
 
@@ -1114,7 +1057,6 @@
   }
 
   function onKey(k){
-    sfx.click(); // Play click sound
     if (k === "ok") return check();
     if (k === "del") {
       if (locked) return;
@@ -1134,7 +1076,6 @@
   }
 
   function toggleMode(){
-    sfx.click();
     if (mode.type === "range"){
       mode.type = "focus";
       mode.focus = 2;
@@ -1151,11 +1092,6 @@
     nextProblem();
   }
 
-  function toggleMute(){
-    muted = !muted;
-    muteBtn.textContent = muted ? "🔇" : "🔊";
-  }
-
   // Events
   pad.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-key]');
@@ -1163,24 +1099,20 @@
     onKey(btn.dataset.key);
   });
 
-  newBtn.addEventListener('click', () => { sfx.click(); nextProblem(); });
+  newBtn.addEventListener('click', nextProblem);
   clearBtn.addEventListener('click', () => {
-    sfx.click();
     if (locked) return;
     input = "";
     renderInput();
   });
   modeBtn.addEventListener('click', toggleMode);
-  muteBtn.addEventListener('click', toggleMute);
 
   collectionBtn.addEventListener('click', () => {
-    sfx.click();
     renderCardGrid();
     collectionModal.classList.add('show');
   });
 
   closeModal.addEventListener('click', () => {
-    sfx.click();
     collectionModal.classList.remove('show');
   });
 
@@ -1190,10 +1122,7 @@
     }
   });
 
-  cardDetailClose.addEventListener('click', () => {
-    sfx.click();
-    hideCardDetail();
-  });
+  cardDetailClose.addEventListener('click', hideCardDetail);
 
   cardDetailOverlay.addEventListener('click', (e) => {
     if (e.target === cardDetailOverlay){
@@ -1201,15 +1130,7 @@
     }
   });
 
-  continueBtn.addEventListener('click', () => {
-    sfx.click();
-    hideCardReward();
-  });
-
-  // Resume AudioContext on first interaction
-  document.addEventListener('click', () => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  }, { once: true });
+  continueBtn.addEventListener('click', hideCardReward);
 
   document.addEventListener('touchstart', () => {}, {passive:true});
 
