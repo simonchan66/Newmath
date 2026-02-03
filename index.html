@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>Multiply! 2–10 · Card Collection</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --card2:#0f1730;
+      --text:#eaf0ff;
+      --muted:#a9b4d6;
+      --good:#27d17f;
+      --bad:#ff4d6d;
+      --accent:#5cc8ff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html, body{
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(1200px 900px at 20% 10%, #19245a, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      overflow: hidden;
+    }
+
+    .app{
+      height: 100dvh;
+      display:flex;
+      flex-direction:column;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+      line-height:1.1;
+    }
+    .title h1{
+      font-size: 18px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .title .sub{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pillRow{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text);
+      backdrop-filter: blur(6px);
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      white-space: nowrap;
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 650;
+      font-size: 13px;
+      box-shadow: none;
+      cursor: pointer;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .main{
+      flex: 1;
+      min-height: 0;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .problem{
+      padding: 14px 14px 10px;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .expr{
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: .5px;
+      display:flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .expr small{
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .answerBox{
+      margin-top: 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .display{
+      flex: 1;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 12px 12px;
+      min-height: 48px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .display .value{
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing:.5px;
+    }
+
+    .display .hint{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .status{
+      padding: 10px 14px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+    }
+
+    .msg{
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    .msg.good{ color: var(--good); }
+    .msg.bad{ color: var(--bad); }
+
+    .bonus{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      text-align:right;
+      min-width: 120px;
+    }
+
+    .keypad{
+      flex: 1;
+      min-height: 0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .pad{
+      flex: 1;
+      min-height: 0;
+      padding: 12px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      align-content: stretch;
+      background: rgba(0,0,0,.10);
+      border-top: 1px solid rgba(255,255,255,.10);
+    }
+
+    .key{
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      color: var(--text);
+      border-radius: 16px;
+      font-size: 22px;
+      font-weight: 900;
+      min-height: 44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .key:active{ transform: translateY(1px); }
+
+    .key.action{
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: .2px;
+    }
+    .key.ok{
+      background: linear-gradient(180deg, rgba(39,209,127,.35), rgba(39,209,127,.15));
+      border-color: rgba(39,209,127,.45);
+    }
+    .key.del{
+      background: linear-gradient(180deg, rgba(255,77,109,.28), rgba(255,77,109,.12));
+      border-color: rgba(255,77,109,.40);
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      max-width: 92vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 1000;
+    }
+    .toast.show{ opacity: 1; }
+
+    .confetti{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index: 999;
+    }
+    .confetti i{
+      position:absolute;
+      width: 10px;
+      height: 14px;
+      border-radius: 2px;
+      opacity: .95;
+      animation: fall 900ms ease-out forwards;
+    }
+    @keyframes fall{
+      from{ transform: translateY(-20px) rotate(0deg); }
+      to{ transform: translateY(110dvh) rotate(540deg); opacity: 0; }
+    }
+
+    /* Score Popup Animation */
+    .score-popup{
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--good);
+      text-shadow: 0 0 30px rgba(39,209,127,.8), 0 4px 20px rgba(0,0,0,.6);
+      z-index: 2500;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .score-popup.show{
+      animation: scorePopup 800ms ease-out forwards;
+    }
+
+    @keyframes scorePopup{
+      0%{ transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+      50%{ transform: translate(-50%, -50%) scale(1.3) rotate(5deg); opacity: 1; }
+      70%{ transform: translate(-50%, -50%) scale(1.1) rotate(-2deg); }
+      100%{ transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    @keyframes scorePopupFade{
+      0%{ opacity: 1; }
+      100%{ opacity: 0; transform: translate(-50%, -60%) scale(1.2); }
+    }
+
+    /* Card Collection Modal */
+    .modal-overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 14px;
+    }
+    .modal-overlay.show{
+      display: flex;
+    }
+
+    .modal{
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .modal-header{
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(18,26,51,.95);
+      backdrop-filter: blur(10px);
+      z-index: 1;
+    }
+
+    .modal-header h2{
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .modal-close{
+      background: rgba(255,77,109,.2);
+      border: 1px solid rgba(255,77,109,.4);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .modal-body{
+      padding: 20px;
+    }
+
+    .collection-info{
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: rgba(92,200,255,.1);
+      border: 1px solid rgba(92,200,255,.25);
+      border-radius: 12px;
+    }
+
+    .collection-info .big{
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .collection-info .label{
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .card-grid{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .card-item{
+      aspect-ratio: 2/3;
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      cursor: pointer;
+      transition: transform 200ms ease;
+    }
+
+    .card-item:active{
+      transform: scale(0.95);
+    }
+
+    .card-item.locked{
+      background: rgba(0,0,0,.3);
+      border-color: rgba(255,255,255,.08);
+      cursor: default;
+    }
+
+    .card-item img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-item .locked-icon{
+      font-size: 40px;
+      opacity: .3;
+    }
+
+    .card-item .card-number{
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      background: rgba(0,0,0,.7);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 6px;
+    }
+
+    .card-item.new-card{
+      animation: cardPop 600ms ease-out;
+    }
+
+    @keyframes cardPop{
+      0%{ transform: scale(0) rotate(-10deg); opacity: 0; }
+      50%{ transform: scale(1.1) rotate(5deg); }
+      100%{ transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* Card Detail View (Full Screen) */
+    .card-detail-overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.92);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3500;
+      padding: 20px;
+    }
+
+    .card-detail-overlay.show{
+      display: flex;
+    }
+
+    .card-detail-content{
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .card-detail-img{
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      margin-bottom: 20px;
+    }
+
+    .card-detail-number{
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .card-detail-close{
+      background: rgba(255,77,109,.25);
+      border: 1px solid rgba(255,77,109,.4);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 800;
+      padding: 12px 28px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    /* Card reward popup */
+    .card-reward{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      padding: 20px;
+    }
+
+    .card-reward.show{
+      display: flex;
+    }
+
+    .card-reward-content{
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .card-reward-title{
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 16px;
+      color: var(--accent);
+      animation: titleBounce 800ms ease-out;
+    }
+
+    @keyframes titleBounce{
+      0%, 100%{ transform: scale(1); }
+      50%{ transform: scale(1.1); }
+    }
+
+    .card-reward-card{
+      width: 220px;
+      aspect-ratio: 2/3;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      border: 3px solid var(--accent);
+      box-shadow: 0 20px 60px rgba(92,200,255,.4), 0 0 0 8px rgba(92,200,255,.1);
+      overflow: hidden;
+      animation: cardReveal 1000ms ease-out;
+    }
+
+    @keyframes cardReveal{
+      0%{ transform: scale(0) rotate(-180deg); opacity: 0; }
+      60%{ transform: scale(1.15) rotate(10deg); }
+      100%{ transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .card-reward-card img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-reward-btn{
+      background: linear-gradient(180deg, var(--accent), rgba(92,200,255,.7));
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 14px 32px;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(92,200,255,.35);
+    }
+
+    .card-reward-btn:active{
+      transform: translateY(2px);
+    }
+
+    .progress-bar-container{
+      margin-top: 8px;
+      background: rgba(0,0,0,.3);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .progress-bar{
+      height: 100%;
+      background: linear-gradient(90deg, var(--good), var(--accent));
+      border-radius: 999px;
+      transition: width 400ms ease;
+    }
+
+    @media (max-height: 700px){
+      .expr{ font-size: 30px; }
+      .pad{ gap: 8px; }
+      .key{ border-radius: 14px; }
+    }
+
+    @media (max-width: 480px){
+      .card-grid{
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app" id="app" aria-label="Multiplication game">
+    <header>
+      <div class="title">
+        <h1>Multiply! (2–10)</h1>
+        <div class="sub">Fast practice · 明快 feedback · Collect cards! 🎴</div>
+      </div>
+
+      <div class="pillRow">
+        <div class="pill" title="Score">
+          <span>⭐</span><span id="score">0</span>
+        </div>
+        <div class="pill" title="Streak">
+          <span>🔥</span><span id="streak">0</span>
+        </div>
+        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/20)</button>
+        <button class="btn" id="newBtn" type="button">New</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <section class="card">
+        <div class="problem">
+          <div class="row">
+            <div class="expr" aria-live="polite">
+              <span id="a">2</span>
+              <small>×</small>
+              <span id="b">2</span>
+              <small>=</small>
+              <span style="opacity:.65">?</span>
+            </div>
+            <button class="btn" id="modeBtn" type="button" title="Change mode">2–10</button>
+          </div>
+
+          <div class="answerBox">
+            <div class="display" role="group" aria-label="Answer input">
+              <div class="value" id="answerValue">—</div>
+              <div class="hint" id="hint">Tap numbers (九宫格)</div>
+            </div>
+            <button class="btn" id="clearBtn" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="status">
+          <div>
+            <div class="msg" id="msg">Ready?</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="bonus" id="bonus">+0</div>
+        </div>
+
+        <div class="keypad">
+          <div class="pad" id="pad" aria-label="Number keypad">
+            <button class="key" data-key="1" type="button">1</button>
+            <button class="key" data-key="2" type="button">2</button>
+            <button class="key" data-key="3" type="button">3</button>
+            <button class="key" data-key="4" type="button">4</button>
+            <button class="key" data-key="5" type="button">5</button>
+            <button class="key" data-key="6" type="button">6</button>
+            <button class="key" data-key="7" type="button">7</button>
+            <button class="key" data-key="8" type="button">8</button>
+            <button class="key" data-key="9" type="button">9</button>
+            <button class="key action del" data-key="del" type="button">⌫ Delete</button>
+            <button class="key" data-key="0" type="button">0</button>
+            <button class="key action ok" data-key="ok" type="button">OK</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="score-popup" id="scorePopup">+0</div>
+
+  <!-- Card Collection Modal -->
+  <div class="modal-overlay" id="collectionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎴 My Card Collection</h2>
+        <button class="modal-close" id="closeModal" type="button">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="collection-info">
+          <div class="big"><span id="modalCardCount">0</span>/20</div>
+          <div class="label">Cards Collected · Keep playing to unlock more!</div>
+        </div>
+        <div class="card-grid" id="cardGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Detail View -->
+  <div class="card-detail-overlay" id="cardDetailOverlay">
+    <div class="card-detail-content">
+      <img class="card-detail-img" id="cardDetailImg" src="" alt="Card detail">
+      <div class="card-detail-number" id="cardDetailNumber">#1</div>
+      <button class="card-detail-close" id="cardDetailClose" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- Card Reward Popup -->
+  <div class="card-reward" id="cardReward">
+    <div class="card-reward-content">
+      <div class="card-reward-title">🎉 New Card Unlocked! 🎉</div>
+      <div class="card-reward-card">
+        <img id="rewardCardImg" src="" alt="New card">
+      </div>
+      <button class="card-reward-btn" id="continueBtn" type="button">Continue Playing!</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const el = (id) => document.getElementById(id);
+
+  const scoreEl = el('score');
+  const streakEl = el('streak');
+  const aEl = el('a');
+  const bEl = el('b');
+  const answerValueEl = el('answerValue');
+  const msgEl = el('msg');
+  const bonusEl = el('bonus');
+  const hintEl = el('hint');
+  const toastEl = el('toast');
+  const confettiEl = el('confetti');
+  const progressBar = el('progressBar');
+  const scorePopup = el('scorePopup');
+
+  const newBtn = el('newBtn');
+  const clearBtn = el('clearBtn');
+  const modeBtn = el('modeBtn');
+  const pad = el('pad');
+
+  const collectionBtn = el('collectionBtn');
+  const collectionModal = el('collectionModal');
+  const closeModal = el('closeModal');
+  const cardGrid = el('cardGrid');
+  const cardCountEl = el('cardCount');
+  const modalCardCount = el('modalCardCount');
+
+  const cardReward = el('cardReward');
+  const rewardCardImg = el('rewardCardImg');
+  const continueBtn = el('continueBtn');
+
+  const cardDetailOverlay = el('cardDetailOverlay');
+  const cardDetailImg = el('cardDetailImg');
+  const cardDetailNumber = el('cardDetailNumber');
+  const cardDetailClose = el('cardDetailClose');
+
+  let mode = { type: "range", min: 2, max: 10, focus: 7 };
+
+  let a = 2, b = 2;
+  let input = "";
+  let score = 0;
+  let streak = 0;
+  let locked = false;
+
+  const TOTAL_CARDS = 20;
+
+  // Progressive milestones: easier at first, then every 2000
+  const CARD_MILESTONES = [
+    500,   // Card 1
+    1500,  // Card 2
+    2800,  // Card 3
+    4100,  // Card 4
+    6100,  // Card 5
+    8100,  // Card 6
+    10100, // Card 7
+    12100, // Card 8
+    14100, // Card 9
+    16100, // Card 10
+    18100, // Card 11
+    20100, // Card 12
+    22100, // Card 13
+    24100, // Card 14
+    26100, // Card 15
+    28100, // Card 16
+    30100, // Card 17
+    32100, // Card 18
+    34100, // Card 19
+    36100  // Card 20
+  ];
+
+  // Load progress from localStorage (works in Safari iOS)
+  function loadProgress(){
+    try {
+      const saved = localStorage.getItem('mathGameProgress');
+      if (saved) {
+        const data = JSON.parse(saved);
+        score = data.score || 0;
+        collectedCards = data.collectedCards || [];
+        return true;
+      }
+    } catch(e) {
+      console.log('Could not load progress:', e);
+    }
+    return false;
+  }
+
+  function saveProgress(){
+    try {
+      const data = {
+        score: score,
+        collectedCards: collectedCards,
+        lastSaved: new Date().toISOString()
+      };
+      localStorage.setItem('mathGameProgress', JSON.stringify(data));
+    } catch(e) {
+      console.log('Could not save progress:', e);
+    }
+  }
+
+  let collectedCards = [];
+  loadProgress();
+
+  function updateCardCount(){
+    cardCountEl.textContent = collectedCards.length;
+    modalCardCount.textContent = collectedCards.length;
+  }
+
+  function updateProgressBar(){
+    const nextCardIndex = collectedCards.length;
+    if (nextCardIndex >= TOTAL_CARDS) {
+      progressBar.style.width = '100%';
+      return;
+    }
+
+    const currentMilestone = nextCardIndex === 0 ? 0 : CARD_MILESTONES[nextCardIndex - 1];
+    const nextMilestone = CARD_MILESTONES[nextCardIndex];
+    const progress = ((score - currentMilestone) / (nextMilestone - currentMilestone)) * 100;
+    progressBar.style.width = Math.max(0, Math.min(100, progress)) + '%';
+  }
+
+  function checkCardUnlock(){
+    const nextCardIndex = collectedCards.length;
+    if (nextCardIndex >= TOTAL_CARDS) return;
+
+    const nextMilestone = CARD_MILESTONES[nextCardIndex];
+    if (score >= nextMilestone){
+      const newCardNumber = nextCardIndex + 1;
+      collectedCards.push(newCardNumber);
+      saveProgress();
+      updateCardCount();
+      showCardReward(newCardNumber);
+    }
+  }
+
+  function showCardReward(cardNum){
+    rewardCardImg.src = `card/${cardNum}.png`;
+    cardReward.classList.add('show');
+    burstConfetti();
+  }
+
+  function hideCardReward(){
+    cardReward.classList.remove('show');
+  }
+
+  function showCardDetail(cardNum){
+    cardDetailImg.src = `card/${cardNum}.png`;
+    cardDetailNumber.textContent = `Card #${cardNum}`;
+    cardDetailOverlay.classList.add('show');
+  }
+
+  function hideCardDetail(){
+    cardDetailOverlay.classList.remove('show');
+  }
+
+  function renderCardGrid(){
+    cardGrid.innerHTML = '';
+    for (let i = 1; i <= TOTAL_CARDS; i++){
+      const cardItem = document.createElement('div');
+      cardItem.className = 'card-item';
+
+      if (collectedCards.includes(i)){
+        const img = document.createElement('img');
+        img.src = `card/${i}.png`;
+        img.alt = `Card ${i}`;
+        cardItem.appendChild(img);
+
+        const num = document.createElement('div');
+        num.className = 'card-number';
+        num.textContent = `#${i}`;
+        cardItem.appendChild(num);
+
+        cardItem.addEventListener('click', () => showCardDetail(i));
+      } else {
+        cardItem.classList.add('locked');
+        const icon = document.createElement('div');
+        icon.className = 'locked-icon';
+        icon.textContent = '🔒';
+        cardItem.appendChild(icon);
+
+        const num = document.createElement('div');
+        num.className = 'card-number';
+        num.textContent = `#${i}`;
+        cardItem.appendChild(num);
+      }
+
+      cardGrid.appendChild(cardItem);
+    }
+  }
+
+  function randInt(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function nextProblem(){
+    locked = false;
+    input = "";
+    renderInput();
+    msgEl.className = "msg";
+    msgEl.textContent = "Go!";
+    bonusEl.textContent = "+0";
+
+    if (mode.type === "range"){
+      a = randInt(mode.min, mode.max);
+      b = randInt(mode.min, mode.max);
+      modeBtn.textContent = "2–10";
+    } else {
+      a = mode.focus;
+      b = randInt(1, 10);
+      modeBtn.textContent = `Focus ${mode.focus}`;
+    }
+    aEl.textContent = a;
+    bEl.textContent = b;
+  }
+
+  function renderInput(){
+    if (input.length === 0){
+      answerValueEl.textContent = "—";
+      hintEl.textContent = "Tap numbers (九宫格)";
+      return;
+    }
+    answerValueEl.textContent = input;
+    hintEl.textContent = "OK to check";
+  }
+
+  function toast(text){
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    window.clearTimeout(toast._t);
+    toast._t = window.setTimeout(() => toastEl.classList.remove('show'), 900);
+  }
+
+  function showScorePopup(points){
+    scorePopup.textContent = `+${points}`;
+    scorePopup.classList.remove('show');
+    void scorePopup.offsetWidth; // Force reflow
+    scorePopup.classList.add('show');
+
+    window.clearTimeout(showScorePopup._t);
+    showScorePopup._t = window.setTimeout(() => {
+      scorePopup.style.animation = 'scorePopupFade 400ms ease-out forwards';
+      window.setTimeout(() => {
+        scorePopup.classList.remove('show');
+        scorePopup.style.animation = '';
+      }, 400);
+    }, 600);
+  }
+
+  function burstConfetti(){
+    confettiEl.innerHTML = "";
+    const colors = ["#5cc8ff","#27d17f","#ffd166","#ff4d6d","#a78bfa"];
+    for (let i=0; i<22; i++){
+      const p = document.createElement('i');
+      p.style.left = (Math.random()*100) + "vw";
+      p.style.top = (-10 - Math.random()*20) + "px";
+      p.style.background = colors[i % colors.length];
+      p.style.transform = `translateY(-20px) rotate(${Math.random()*180}deg)`;
+      p.style.animationDuration = (700 + Math.random()*500) + "ms";
+      p.style.width = (8 + Math.random()*8) + "px";
+      p.style.height = (10 + Math.random()*10) + "px";
+      confettiEl.appendChild(p);
+    }
+    window.setTimeout(() => confettiEl.innerHTML = "", 1200);
+  }
+
+  function calcPoints(){
+    const base = 10;
+    const extra = Math.max(0, streak - 2) * 5;
+    return { base, extra, total: base + extra };
+  }
+
+  function check(){
+    if (locked) return;
+    if (input.length === 0) { toast("Enter an answer"); return; }
+
+    const correct = a * b;
+    const guess = Number(input);
+
+    locked = true;
+
+    if (guess === correct){
+      streak += 1;
+      const pts = calcPoints();
+      score += pts.total;
+
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+
+      msgEl.className = "msg good";
+      msgEl.textContent = "Correct! 🎉";
+      bonusEl.textContent = `+${pts.total} (base ${pts.base}${pts.extra ? ` + streak ${pts.extra}` : ""})`;
+
+      showScorePopup(pts.total);
+      updateProgressBar();
+      burstConfetti();
+      saveProgress();
+
+      window.setTimeout(() => {
+        checkCardUnlock();
+        nextProblem();
+      }, 520);
+    } else {
+      streak = 0;
+      streakEl.textContent = streak;
+
+      msgEl.className = "msg bad";
+      msgEl.textContent = `Try again: ${a} × ${b} = ${correct}`;
+      bonusEl.textContent = "+0";
+
+      window.setTimeout(() => { locked = false; }, 450);
+    }
+  }
+
+  function onKey(k){
+    if (k === "ok") return check();
+    if (k === "del") {
+      if (locked) return;
+      input = input.slice(0, -1);
+      renderInput();
+      return;
+    }
+
+    if (locked) return;
+    if (!/^\d$/.test(k)) return;
+
+    if (input.length >= 3) return;
+
+    if (input === "0") input = "";
+    input += k;
+    renderInput();
+  }
+
+  function toggleMode(){
+    if (mode.type === "range"){
+      mode.type = "focus";
+      mode.focus = 2;
+      toast("Focus mode");
+    } else {
+      mode.focus += 1;
+      if (mode.focus > 10){
+        mode.type = "range";
+        toast("Back to 2–10");
+      } else {
+        toast(`Focus ${mode.focus}×`);
+      }
+    }
+    nextProblem();
+  }
+
+  // Events
+  pad.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-key]');
+    if (!btn) return;
+    onKey(btn.dataset.key);
+  });
+
+  newBtn.addEventListener('click', nextProblem);
+  clearBtn.addEventListener('click', () => {
+    if (locked) return;
+    input = "";
+    renderInput();
+  });
+  modeBtn.addEventListener('click', toggleMode);
+
+  collectionBtn.addEventListener('click', () => {
+    renderCardGrid();
+    collectionModal.classList.add('show');
+  });
+
+  closeModal.addEventListener('click', () => {
+    collectionModal.classList.remove('show');
+  });
+
+  collectionModal.addEventListener('click', (e) => {
+    if (e.target === collectionModal){
+      collectionModal.classList.remove('show');
+    }
+  });
+
+  cardDetailClose.addEventListener('click', hideCardDetail);
+
+  cardDetailOverlay.addEventListener('click', (e) => {
+    if (e.target === cardDetailOverlay){
+      hideCardDetail();
+    }
+  });
+
+  continueBtn.addEventListener('click', hideCardReward);
+
+  document.addEventListener('touchstart', () => {}, {passive:true});
+
+  // Initialize
+  updateCardCount();
+  updateProgressBar();
+  scoreEl.textContent = score;
+  nextProblem();
+})();
+</script>
+</body>
+</html>
