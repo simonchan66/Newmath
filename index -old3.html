@@ -657,7 +657,7 @@
         <div class="pill" title="Streak">
           <span>🔥</span><span id="streak">0</span>
         </div>
-        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/110)</button>
+        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/50)</button>
         <button class="btn" id="newBtn" type="button">New</button>
       </div>
     </header>
@@ -728,12 +728,11 @@
       </div>
       <div class="modal-body">
         <div class="collection-info">
-          <div class="big"><span id="modalCardCount">0</span>/110</div>
+          <div class="big"><span id="modalCardCount">0</span>/50</div>
           <div class="label">Cards Collected · Keep playing to unlock more!</div>
         </div>
         <div class="card-grid" id="cardGrid"></div>
-        <div class="settings-row" style="gap:10px;">
-            <button class="btn" id="dadModeBtn" type="button" style="border-color:rgba(92,200,255,.4); background:rgba(92,200,255,.1);">👨🏻 Dad Mode</button>
+        <div class="settings-row">
             <button class="btn danger" id="resetBtn" type="button">⚠️ Reset All Progress</button>
         </div>
       </div>
@@ -791,7 +790,6 @@
   const cardCountEl = el('cardCount');
   const modalCardCount = el('modalCardCount');
   const resetBtn = el('resetBtn');
-  const dadModeBtn = el('dadModeBtn');
 
   const cardReward = el('cardReward');
   const rewardCardImg = el('rewardCardImg');
@@ -813,7 +811,7 @@
   let wasWrong = false;
   let muted = false;
 
-  const TOTAL_CARDS = 110;
+  const TOTAL_CARDS = 50;
 
   // First 4 cards follow custom easy path
   // Card 1: 500
@@ -911,7 +909,6 @@
       if (saved) {
         const data = JSON.parse(saved);
         score = data.score || 0;
-        streak = data.streak || 0;
         collectedCards = data.collectedCards || [];
         // Ensure collectedCards is valid
         if (!Array.isArray(collectedCards)) collectedCards = [];
@@ -925,7 +922,6 @@
     try {
       const data = {
         score: score,
-        streak: streak,
         collectedCards: collectedCards,
         lastSaved: new Date().toISOString()
       };
@@ -1297,53 +1293,6 @@
     hideCardReward();
   });
 
-  
-  dadModeBtn.addEventListener('click', () => {
-    sfx.click();
-    const pw = prompt("Enter Dad Password:");
-    if (pw === "88888888") {
-      // Score
-      let val = prompt("Set Score (Current: " + score + ")", score);
-      if (val !== null) score = parseInt(val) || 0;
-      
-      // Streak
-      val = prompt("Set Streak (Current: " + streak + ")", streak);
-      if (val !== null) streak = parseInt(val) || 0;
-      
-      // Cards (Count based)
-      val = prompt("Set Total Cards Unlocked (0-" + TOTAL_CARDS + ")", collectedCards.length);
-      if (val !== null) {
-         let count = parseInt(val);
-         if (!isNaN(count)) {
-             count = Math.max(0, Math.min(count, TOTAL_CARDS));
-             collectedCards = [];
-             for(let i=1; i<=count; i++) {
-                 collectedCards.push(i);
-             }
-
-             // Fix: Auto-update score if it's too low for the selected card count
-             if (count > 0 && count <= CARD_MILESTONES.length) {
-                 const minRequired = CARD_MILESTONES[count - 1];
-                 if (score < minRequired) {
-                     score = minRequired;
-                     alert("Note: Score automatically updated to " + score + " to match card progress.");
-                 }
-             }
-         }
-      }
-
-      saveProgress();
-      scoreEl.textContent = score;
-      streakEl.textContent = streak;
-      updateCardCount();
-      updateProgressBar();
-      renderCardGrid();
-      toast("Dad Mode: Progress Restored!");
-    } else if (pw !== null) {
-      toast("Wrong Password 🔒");
-    }
-  });
-
   resetBtn.addEventListener('click', () => {
     sfx.click();
     resetProgress();
@@ -1359,7 +1308,6 @@
   updateCardCount();
   updateProgressBar();
   scoreEl.textContent = score;
-  streakEl.textContent = streak;
   nextProblem();
 })();
 </script>

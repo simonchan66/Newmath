@@ -657,7 +657,7 @@
         <div class="pill" title="Streak">
           <span>🔥</span><span id="streak">0</span>
         </div>
-        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/110)</button>
+        <button class="btn" id="collectionBtn" type="button">📚 Cards (<span id="cardCount">0</span>/50)</button>
         <button class="btn" id="newBtn" type="button">New</button>
       </div>
     </header>
@@ -728,7 +728,7 @@
       </div>
       <div class="modal-body">
         <div class="collection-info">
-          <div class="big"><span id="modalCardCount">0</span>/110</div>
+          <div class="big"><span id="modalCardCount">0</span>/50</div>
           <div class="label">Cards Collected · Keep playing to unlock more!</div>
         </div>
         <div class="card-grid" id="cardGrid"></div>
@@ -813,7 +813,7 @@
   let wasWrong = false;
   let muted = false;
 
-  const TOTAL_CARDS = 110;
+  const TOTAL_CARDS = 50;
 
   // First 4 cards follow custom easy path
   // Card 1: 500
@@ -1319,15 +1319,6 @@
              collectedCards = [];
              for(let i=1; i<=count; i++) {
                  collectedCards.push(i);
-             }
-
-             // Fix: Auto-update score if it's too low for the selected card count
-             if (count > 0 && count <= CARD_MILESTONES.length) {
-                 const minRequired = CARD_MILESTONES[count - 1];
-                 if (score < minRequired) {
-                     score = minRequired;
-                     alert("Note: Score automatically updated to " + score + " to match card progress.");
-                 }
              }
          }
       }
