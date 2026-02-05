@@ -139,7 +139,7 @@
     }
 
     .expr small{
-      font-size: 14px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--muted);
     }
@@ -668,7 +668,7 @@
           <div class="row">
             <div class="expr" aria-live="polite">
               <span id="a">2</span>
-              <small>×</small>
+              <small id="op">×</small>
               <span id="b">2</span>
               <small>=</small>
               <span style="opacity:.65">?</span>
@@ -767,6 +767,7 @@
   const streakEl = el('streak');
   const aEl = el('a');
   const bEl = el('b');
+  const opEl = el('op');
   const answerValueEl = el('answerValue');
   const msgEl = el('msg');
   const bonusEl = el('bonus');
@@ -802,10 +803,12 @@
   let mode = { type: "range", min: 2, max: 10, focus: 7 };
 
   let a = 2, b = 2;
+  let currentOp = "×";
   let input = "";
   let score = 0;
   let streak = 0;
   let locked = false;
+  let wasWrong = false;
   let muted = false;
 
   const TOTAL_CARDS = 50;
@@ -1041,17 +1044,36 @@
 
   function nextProblem(){
     locked = false;
+    wasWrong = false;
     input = "";
     renderInput();
     msgEl.className = "msg";
     msgEl.textContent = "Go!";
     bonusEl.textContent = "+0";
 
-    if (mode.type === "range"){
+    if (mode.type === "reception") {
+      const isAdd = Math.random() > 0.5;
+      currentOp = isAdd ? '+' : '−';
+      if (isAdd) {
+          a = randInt(1, 10);
+          b = randInt(1, 10);
+      } else {
+          const n1 = randInt(1, 10);
+          const n2 = randInt(1, 10);
+          a = Math.max(n1, n2);
+          b = Math.min(n1, n2);
+      }
+      modeBtn.textContent = "Reception";
+      opEl.textContent = currentOp;
+    } else if (mode.type === "range"){
+      currentOp = '×';
+      opEl.textContent = '×';
       a = randInt(mode.min, mode.max);
       b = randInt(mode.min, mode.max);
       modeBtn.textContent = "2–10";
     } else {
+      currentOp = '×';
+      opEl.textContent = '×';
       a = mode.focus;
       b = randInt(1, 10);
       modeBtn.textContent = `Focus ${mode.focus}`;
@@ -1111,7 +1133,8 @@
   }
 
   function calcPoints(){
-    const base = 10;
+    let base = 10;
+    if (mode.type === "reception") base = 30;
     const extra = Math.max(0, streak - 2) * 5;
     return { base, extra, total: base + extra };
   }
@@ -1120,7 +1143,11 @@
     if (locked) return;
     if (input.length === 0) { toast("Enter an answer"); return; }
 
-    const correct = a * b;
+    let correct;
+    if (currentOp === '+') correct = a + b;
+    else if (currentOp === '−') correct = a - b;
+    else correct = a * b;
+
     const guess = Number(input);
 
     locked = true;
@@ -1137,7 +1164,7 @@
       msgEl.textContent = "Correct! 🎉";
       bonusEl.textContent = `+${pts.total} (base ${pts.base}${pts.extra ? ` + streak ${pts.extra}` : ""})`;
 
-      sfx.correct(); // Play success sound
+      sfx.correct(); 
       showScorePopup(pts.total);
       updateProgressBar();
       burstConfetti();
@@ -1148,12 +1175,14 @@
         nextProblem();
       }, 520);
     } else {
-      sfx.wrong(); // Play error sound
+      sfx.wrong();
       streak = 0;
       streakEl.textContent = streak;
+      
+      wasWrong = true; // Flag for auto-clear
 
       msgEl.className = "msg bad";
-      msgEl.textContent = `Try again: ${a} × ${b} = ${correct}`;
+      msgEl.textContent = `Try again`; 
       bonusEl.textContent = "+0";
 
       window.setTimeout(() => { locked = false; }, 450);
@@ -1161,7 +1190,7 @@
   }
 
   function onKey(k){
-    sfx.click(); // Play click sound
+    sfx.click(); 
     if (k === "ok") return check();
     if (k === "del") {
       if (locked) return;
@@ -1173,6 +1202,14 @@
     if (locked) return;
     if (!/^\d$/.test(k)) return;
 
+    // Auto-clear logic
+    if (wasWrong) {
+        input = "";
+        wasWrong = false;
+        msgEl.className = "msg"; 
+        msgEl.textContent = "Go!";
+    }
+
     if (input.length >= 3) return;
 
     if (input === "0") input = "";
@@ -1183,6 +1220,9 @@
   function toggleMode(){
     sfx.click();
     if (mode.type === "range"){
+      mode.type = "reception";
+      toast("Reception Mode (Easy)");
+    } else if (mode.type === "reception"){
       mode.type = "focus";
       mode.focus = 2;
       toast("Focus mode");
