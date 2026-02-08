@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Craziest School Day Ever!</title>
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --bg-color: #F7FFF7;
+            --text-color: #292F36;
+            --accent-color: #FFE66D;
+            --selected-color: #95E1D3; /* Green highlight */
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.6rem;
+            text-shadow: 2px 2px 0px var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        #game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .scene-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 3px solid var(--secondary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .illustration {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+
+        .story-text {
+            font-size: 1.2rem;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            min-height: 3rem; /* prevent jump */
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        button.choice-btn {
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 var(--primary-color);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        button.choice-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        
+        /* State when selected but waiting for speech to finish */
+        button.choice-btn.selected-choice {
+            background-color: var(--selected-color);
+            border-color: #2F9E8E;
+            box-shadow: none;
+            transform: translateY(4px);
+            font-weight: bold;
+        }
+
+        button.choice-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        button.choice-btn .emoji-icon {
+            font-size: 1.4rem;
+            margin-right: 10px;
+            min-width: 30px;
+        }
+
+        /* Reading Indicator */
+        .speaking-indicator {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            height: 20px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .speaking-indicator.active {
+            opacity: 1;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .hidden { display: none; }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <h1>🏫 Crazy School Day</h1>
+
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="scene-card">
+            <span class="illustration">🎒</span>
+            <p class="story-text">Ready to make a silly story?</p>
+            <p style="font-size: 0.9rem; color: #666;">Turn up your volume! 🔊</p>
+            <button class="choice-btn" onclick="startGame()" style="justify-content: center; background: var(--secondary-color); border-color: #3AAFA9; box-shadow: 0 4px 0 #3AAFA9; color: white; font-weight: bold;">
+                Start Adventure! 🚀
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="scene-card hidden">
+            <span id="scene-emoji" class="illustration">🤔</span>
+            <div id="speaking-status" class="speaking-indicator">🗣️ Reading options...</div>
+            <p id="scene-text" class="story-text"></p>
+            <div id="choices-container" class="choices-grid"></div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="scene-card hidden">
+            <span class="illustration">🎉</span>
+            <h2>The End!</h2>
+            <div id="final-story" style="text-align: left; background: #FFFbea; padding: 15px; border-radius: 10px; margin-bottom: 15px; max-height: 300px; overflow-y: auto; font-size: 1rem;"></div>
+            <button class="choice-btn" onclick="readFullStory()" style="justify-content: center; background: var(--accent-color); border-color: #E6C229; box-shadow: 0 4px 0 #E6C229; margin-bottom: 10px;">
+                📖 Read Whole Story
+            </button>
+            <button class="choice-btn" onclick="location.reload()" style="justify-content: center;">
+                🔄 Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Story Data ---
+        const storyData = [
+            {
+                text: "You walk into your classroom, but your teacher is missing! Sitting at the desk is...",
+                emoji: "👩‍🏫",
+                choices: [
+                    { text: "A giant hamster wearing glasses.", icon: "🐹" },
+                    { text: "A robot eating homework.", icon: "🤖" },
+                    { text: "A penguin in a tuxedo.", icon: "🐧" },
+                    { text: "A slice of pizza with eyes.", icon: "🍕" }
+                ]
+            },
+            {
+                text: "The new teacher looks at the class and shouts...",
+                emoji: "📢",
+                choices: [
+                    { text: "\"No more math! Only dancing!\"", icon: "💃" },
+                    { text: "\"Who wants ice cream for breakfast?\"", icon: "🍦" },
+                    { text: "\"Homework is illegal!\"", icon: "🚫" },
+                    { text: "\"Everyone must walk backwards!\"", icon: "🔙" }
+                ]
+            },
+            {
+                text: "You sit down and open your backpack. Inside, you find...",
+                emoji: "🎒",
+                choices: [
+                    { text: "A family of singing frogs.", icon: "🐸" },
+                    { text: "A portal to a candy world.", icon: "🍭" },
+                    { text: "100 marshmallows.", icon: "🍡" },
+                    { text: "A sleeping baby dragon.", icon: "🐉" }
+                ]
+            },
+            {
+                text: "It is time for English class. But instead of pens, everyone has to write with...",
+                emoji: "✍️",
+                choices: [
+                    { text: "Invisible ink.", icon: "👻" },
+                    { text: "French fries dipped in ketchup.", icon: "🍟" },
+                    { text: "Magic wands.", icon: "🪄" },
+                    { text: "Their toes.", icon: "🦶" }
+                ]
+            },
+            {
+                text: "Suddenly, the school bell rings. It sounds like...",
+                emoji: "🔔",
+                choices: [
+                    { text: "A cow mooing \"Mooooo-ve out!\"", icon: "🐄" },
+                    { text: "A giant duck quacking.", icon: "🦆" },
+                    { text: "Funny disco music.", icon: "🕺" },
+                    { text: "Someone burping loudly.", icon: "🙊" }
+                ]
+            },
+             {
+                text: "You run to the playground. The floor has turned into...",
+                emoji: "🛝",
+                choices: [
+                    { text: "Purple jelly.", icon: "🍮" },
+                    { text: "A giant trampoline.", icon: "🤸" },
+                    { text: "Crunchy popcorn.", icon: "🍿" },
+                    { text: "Soft clouds.", icon: "☁️" }
+                ]
+            },
+            {
+                text: "For lunch, you open your lunchbox. Your sandwich suddenly...",
+                emoji: "🥪",
+                choices: [
+                    { text: "Flies away like a bird.", icon: "🐦" },
+                    { text: "Starts singing \"Let It Go\".", icon: "🎤" },
+                    { text: "Turns into a butterfly.", icon: "🦋" },
+                    { text: "Asks you for a napkin.", icon: "🧻" }
+                ]
+            },
+            {
+                text: "School is over! To get home, you jump onto your vehicle, which is...",
+                emoji: "🚌",
+                choices: [
+                    { text: "A rocket-powered snail.", icon: "🐌" },
+                    { text: "A flying carpet made of socks.", icon: "🧦" },
+                    { text: "A friendly T-Rex.", icon: "🦖" },
+                    { text: "A bubble that never pops.", icon: "🫧" }
+                ]
+            },
+            {
+                text: "You get home and tell your mom. She says...",
+                emoji: "🏠",
+                choices: [
+                    { text: "\"Did you bring me a taco?\"", icon: "🌮" },
+                    { text: "\"That is normal, I am an alien.\"", icon: "👽" },
+                    { text: "\"Cool! I went to the moon for tea.\"", icon: "🌑" },
+                    { text: "\"Let's go back tomorrow!\"", icon: "📅" }
+                ]
+            },
+            {
+                text: "You blink your eyes and realize it was all a dream! You are sleeping in...",
+                emoji: "💤",
+                choices: [
+                    { text: "A giant donut.", icon: "🍩" },
+                    { text: "A nest on top of a tree.", icon: "🌳" },
+                    { text: "A bathtub full of slime.", icon: "🛁" },
+                    { text: "A spaceship heading to Mars.", icon: "🚀" }
+                ]
+            }
+        ];
+
+        // --- Game State & Audio ---
+        let currentScene = 0;
+        let userChoices = [];
+        let synth = window.speechSynthesis;
+        let selectedVoice = null;
+        let currentUtterance = null; // Global reference to prevent GC issues on iOS
+
+        // --- Audio Setup ---
+        function loadVoice() {
+            let voices = synth.getVoices();
+            selectedVoice = voices.find(voice => voice.name.includes('Samantha')) || 
+                            voices.find(voice => voice.lang === 'en-US') || 
+                            voices[0];
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoice;
+        }
+
+        // Helper: Speak text
+        function speak(text, callback = null, rate = 0.95) {
+            // Do not cancel here immediately, we manage queue in logic
+            let utterThis = new SpeechSynthesisUtterance(text);
+            utterThis.rate = rate; 
+            utterThis.pitch = 1.05;
+            if (selectedVoice) utterThis.voice = selectedVoice;
+            
+            if (callback) {
+                utterThis.onend = callback;
+                utterThis.onerror = callback; // Safety net
+            }
+            
+            // iOS Safari Safety: Keep reference
+            currentUtterance = utterThis;
+            synth.speak(utterThis);
+        }
+
+        // --- Game Logic ---
+
+        function startGame() {
+            loadVoice(); // Try loading again just in case
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            loadScene();
+        }
+
+        function loadScene() {
+            if (currentScene >= storyData.length) {
+                endGame();
+                return;
+            }
+
+            const scene = storyData[currentScene];
+            
+            // 1. Update UI
+            document.getElementById('scene-emoji').innerText = scene.emoji;
+            document.getElementById('scene-text').innerText = scene.text;
+            document.getElementById('speaking-status').classList.add('active');
+            
+            let progress = ((currentScene) / storyData.length) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
+
+            // 2. Generate Choices
+            const choicesContainer = document.getElementById('choices-container');
+            choicesContainer.innerHTML = '';
+            
+            scene.choices.forEach((choice) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerHTML = `<span class="emoji-icon">${choice.icon}</span> ${choice.text}`;
+                // Pass the button element and text
+                btn.onclick = (e) => handleChoiceSelection(btn, choice.text);
+                choicesContainer.appendChild(btn);
+            });
+
+            // 3. Auto-Read Everything (Queue mode)
+            synth.cancel(); // Stop anything from before
+            
+            // Queue Question
+            speak(scene.text);
+            
+            // Queue Choices with slight pause
+            scene.choices.forEach(choice => {
+                speak(choice.text);
+            });
+            
+            // Remove "Reading..." indicator when queue finishes? 
+            // Hard to detect end of queue reliably on web, so we just leave it or hide on interaction.
+        }
+
+        function handleChoiceSelection(btnElement, choiceText) {
+            // 1. Stop the auto-reading list immediately
+            synth.cancel();
+            document.getElementById('speaking-status').classList.remove('active');
+
+            // 2. Lock UI (prevent double clicks)
+            const allBtns = document.querySelectorAll('.choice-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            // 3. Highlight selected
+            btnElement.classList.add('selected-choice');
+
+            // 4. Speak the answer FIRST (Crucial Step)
+            // We pass a callback to advance AFTER speaking is done
+            speak(choiceText, function() {
+                // This runs when speech finishes
+                userChoices.push({
+                    q: storyData[currentScene].text,
+                    a: choiceText
+                });
+                currentScene++;
+                
+                // Small delay before next scene for visual pacing
+                setTimeout(loadScene, 500); 
+            });
+        }
+
+        function endGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = '100%';
+            
+            let storyHtml = "";
+            let storyReadText = "Here is your crazy story. ";
+            
+            userChoices.forEach((item, index) => {
+                storyHtml += `<p style="margin-bottom:10px;"><strong>${index + 1}.</strong> ${item.q}<br><span style="color:var(--primary-color)">👉 ${item.a}</span></p>`;
+                storyReadText += `${item.q} ${item.a}. `;
+            });
+
+            document.getElementById('final-story').innerHTML = storyHtml;
+            document.getElementById('final-story').dataset.readText = storyReadText;
+            
+            speak("You did it! What a funny story.");
+        }
+
+        function readFullStory() {
+            const text = document.getElementById('final-story').dataset.readText;
+            synth.cancel();
+            speak(text, null, 1.0);
+        }
+
+    </script>
+</body>
+</html>
