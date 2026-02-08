@@ -67,13 +67,37 @@
             font-size: 1.2rem;
             line-height: 1.4;
             margin-bottom: 15px;
-            min-height: 3rem; 
+            padding: 15px;
+            border-radius: 15px;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        /* --- GAMEPLAY HIGHLIGHT STYLE --- */
+        .reading-highlight {
+            background-color: #ffe57f !important; /* Bright Yellow-Gold */
+            border-color: #ffc107 !important;     /* Darker Orange-Gold Border */
+            border-width: 4px !important;         /* Thick Border */
+            transform: scale(1.05);               /* Make it pop out */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important; /* Lift it up */
+            font-weight: bold;
+            z-index: 10;
+            color: black !important;
+        }
+
+        /* --- FINAL STORY HIGHLIGHT STYLE (No scaling to prevent jumps) --- */
+        .final-highlight {
+            background-color: #ffe57f;
+            border-radius: 5px;
+            box-shadow: 0 0 5px #ffc107;
+            padding: 2px 5px;
+            transition: background-color 0.2s;
         }
 
         .choices-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 10px;
+            gap: 15px;
         }
 
         button.choice-btn {
@@ -107,14 +131,54 @@
         }
 
         button.choice-btn:disabled {
-            opacity: 0.7;
             cursor: not-allowed;
+            opacity: 0.6;
         }
 
         button.choice-btn .emoji-icon {
             font-size: 1.4rem;
             margin-right: 10px;
             min-width: 30px;
+        }
+
+        /* --- CUSTOM INPUT STYLES --- */
+        .custom-input-wrapper {
+            display: flex;
+            width: 100%;
+            gap: 8px;
+        }
+        
+        .custom-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .custom-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 5px var(--secondary-color);
+        }
+
+        .custom-go-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #3AAFA9;
+            transition: transform 0.1s;
+        }
+
+        .custom-go-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
         }
 
         .speaking-indicator {
@@ -179,7 +243,8 @@
             <span class="illustration" id="story-start-icon">🎒</span>
             <p class="story-text" id="story-start-text">Ready to start?</p>
             <p style="font-size: 0.9rem; color: #666;">Turn up your volume! 🔊</p>
-            <button class="choice-btn" onclick="startSceneSequence()" style="justify-content: center; background: var(--secondary-color); border-color: #3AAFA9; box-shadow: 0 4px 0 #3AAFA9; color: white; font-weight: bold;">
+            <!-- Added ID 'start-btn' for easier targeting -->
+            <button id="start-btn" class="choice-btn" onclick="startSceneSequence()" style="justify-content: center; background: var(--secondary-color); border-color: #3AAFA9; box-shadow: 0 4px 0 #3AAFA9; color: white; font-weight: bold;">
                 Start Adventure! 🚀
             </button>
             <br>
@@ -212,12 +277,16 @@
 
     <script>
         // --- Game State ---
-        let currentStoryScenes = []; // Will hold the selected story data
+        let currentStoryScenes = [];
         let currentScene = 0;
         let userChoices = [];
         let synth = window.speechSynthesis;
         let selectedVoice = null;
         let currentUtterance = null;
+
+        // Variables for final reading
+        let readingIndex = 0;
+        let readingType = 'q'; 
 
         // --- Init ---
         window.onload = function() {
@@ -228,7 +297,11 @@
             const menu = document.getElementById('story-menu');
             menu.innerHTML = '';
             
-            // Loop through the stories in stories.js
+            if (typeof gameStories === 'undefined') {
+                menu.innerHTML = '<p style="color:red">Error: stories.js not loaded!</p>';
+                return;
+            }
+
             for (let key in gameStories) {
                 const story = gameStories[key];
                 const btn = document.createElement('button');
@@ -240,6 +313,13 @@
         }
 
         function showSelectionScreen() {
+            cleanupHighlights(); 
+            synth.cancel();
+
+            // 1. Reset Menu Buttons
+            const menuBtns = document.querySelectorAll('#story-menu .choice-btn');
+            menuBtns.forEach(b => b.disabled = false);
+
             document.getElementById('end-screen').classList.add('hidden');
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.add('hidden');
@@ -249,20 +329,23 @@
         }
 
         function selectStory(storyKey) {
-            // Load the data
             const story = gameStories[storyKey];
             currentStoryScenes = story.scenes;
             
-            // Update UI for Start Screen
+            // 1. Update Text
             document.getElementById('main-title').innerText = story.title;
             document.getElementById('story-start-icon').innerText = story.emoji;
             document.getElementById('story-start-text').innerText = `Ready to play "${story.title}"?`;
             
-            // Switch Screens
+            // 2. IMPORTANT: Force enable the Start Button
+            const startBtn = document.getElementById('start-btn');
+            if(startBtn) startBtn.disabled = false;
+            
+            // 3. Show Screen
             document.getElementById('selection-screen').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
             
-            // Reset Game State
+            // 4. Reset State
             currentScene = 0;
             userChoices = [];
         }
@@ -271,6 +354,7 @@
         function loadVoice() {
             let voices = synth.getVoices();
             selectedVoice = voices.find(voice => voice.name.includes('Samantha')) || 
+                            voices.find(voice => voice.lang === 'en-US' && !voice.name.includes('Google')) || 
                             voices.find(voice => voice.lang === 'en-US') || 
                             voices[0];
         }
@@ -279,24 +363,41 @@
             speechSynthesis.onvoiceschanged = loadVoice;
         }
 
-        function speak(text, callback = null, rate = 0.95) {
+        function speak(text, onEnd = null, onStart = null) {
             let utterThis = new SpeechSynthesisUtterance(text);
-            utterThis.rate = rate; 
+            utterThis.rate = 0.9; 
             utterThis.pitch = 1.05;
             if (selectedVoice) utterThis.voice = selectedVoice;
             
-            if (callback) {
-                utterThis.onend = callback;
-                utterThis.onerror = callback;
-            }
+            if (onStart) utterThis.onstart = onStart;
+            
+            utterThis.onend = function(event) {
+                if (onEnd) onEnd();
+            };
+            
+            utterThis.onerror = function(event) {
+                if (onEnd) onEnd();
+            };
+
             currentUtterance = utterThis;
             synth.speak(utterThis);
+        }
+
+        function cleanupHighlights() {
+            const highlighted = document.querySelectorAll('.reading-highlight, .final-highlight');
+            highlighted.forEach(el => {
+                el.classList.remove('reading-highlight');
+                el.classList.remove('final-highlight');
+            });
         }
 
         // --- Game Logic ---
 
         function startSceneSequence() {
             loadVoice();
+            // Disable start button to prevent double-click
+            document.getElementById('start-btn').disabled = true;
+
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             loadScene();
@@ -312,7 +413,8 @@
             
             // 1. Update UI
             document.getElementById('scene-emoji').innerText = scene.emoji;
-            document.getElementById('scene-text').innerText = scene.text;
+            const textElement = document.getElementById('scene-text');
+            textElement.innerText = scene.text;
             document.getElementById('speaking-status').classList.add('active');
             
             let progress = ((currentScene) / currentStoryScenes.length) * 100;
@@ -322,28 +424,123 @@
             const choicesContainer = document.getElementById('choices-container');
             choicesContainer.innerHTML = '';
             
+            let buttonElements = []; 
+            
+            // A. Standard Choices
             scene.choices.forEach((choice) => {
                 const btn = document.createElement('button');
                 btn.className = 'choice-btn';
                 btn.innerHTML = `<span class="emoji-icon">${choice.icon}</span> ${choice.text}`;
                 btn.onclick = (e) => handleChoiceSelection(btn, choice.text);
                 choicesContainer.appendChild(btn);
+                buttonElements.push(btn);
             });
 
-            // 3. Auto-Read
+            // B. Write Your Own Option
+            const customBtn = document.createElement('button');
+            customBtn.className = 'choice-btn';
+            customBtn.id = 'custom-choice-btn';
+            customBtn.innerHTML = `<span class="emoji-icon">✍️</span> Write your own...`;
+            customBtn.onclick = (e) => enableCustomInput(customBtn);
+            choicesContainer.appendChild(customBtn);
+            buttonElements.push(customBtn);
+
+            // 3. Queue Audio
             synth.cancel(); 
-            speak(scene.text);
-            scene.choices.forEach(choice => {
-                speak(choice.text);
+            
+            // Speak Main Question
+            speak(
+                scene.text, 
+                () => textElement.classList.remove('reading-highlight'), 
+                () => textElement.classList.add('reading-highlight')     
+            );
+            
+            // Speak Choices
+            scene.choices.forEach((choice, index) => {
+                speak(
+                    choice.text,
+                    () => buttonElements[index].classList.remove('reading-highlight'),
+                    () => buttonElements[index].classList.add('reading-highlight')
+                );
+            });
+
+            // Speak "Or write your own"
+            const customIndex = buttonElements.length - 1;
+            speak(
+                "Or... create your own answer!",
+                () => buttonElements[customIndex].classList.remove('reading-highlight'),
+                () => buttonElements[customIndex].classList.add('reading-highlight')
+            );
+        }
+
+        // --- Custom Input Logic ---
+
+        function enableCustomInput(btnElement) {
+            synth.cancel();
+            cleanupHighlights();
+            document.getElementById('speaking-status').classList.remove('active');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-input-wrapper';
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'custom-input';
+            input.placeholder = 'Type your answer here...';
+            input.id = 'custom-answer-input';
+            
+            input.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    submitCustomAnswer(input.value);
+                }
+            });
+
+            const goBtn = document.createElement('button');
+            goBtn.className = 'custom-go-btn';
+            goBtn.innerText = 'GO!';
+            goBtn.onclick = () => submitCustomAnswer(input.value);
+
+            wrapper.appendChild(input);
+            wrapper.appendChild(goBtn);
+            
+            btnElement.replaceWith(wrapper);
+            input.focus();
+        }
+
+        function submitCustomAnswer(text) {
+            if (!text || text.trim() === "") {
+                speak("Please type something first!");
+                return;
+            }
+
+            const allBtns = document.querySelectorAll('.choice-btn');
+            allBtns.forEach(b => b.disabled = true);
+            const goBtn = document.querySelector('.custom-go-btn');
+            if(goBtn) goBtn.disabled = true;
+
+            speak(text, function() {
+                userChoices.push({
+                    q: currentStoryScenes[currentScene].text,
+                    a: text 
+                });
+                
+                currentScene++;
+                setTimeout(loadScene, 500); 
             });
         }
 
+
+        // --- Standard Logic ---
+
         function handleChoiceSelection(btnElement, choiceText) {
-            synth.cancel();
+            synth.cancel(); 
+            cleanupHighlights();
             document.getElementById('speaking-status').classList.remove('active');
 
             const allBtns = document.querySelectorAll('.choice-btn');
             allBtns.forEach(b => b.disabled = true);
+            const customBtn = document.getElementById('custom-choice-btn');
+            if(customBtn) customBtn.disabled = true;
 
             btnElement.classList.add('selected-choice');
 
@@ -366,23 +563,62 @@
             endButtons.forEach(btn => btn.disabled = false);
 
             let storyHtml = "";
-            let storyReadText = "Here is your story. ";
             
+            // Build the HTML with IDs so we can highlight specific parts
             userChoices.forEach((item, index) => {
-                storyHtml += `<p style="margin-bottom:10px;"><strong>${index + 1}.</strong> ${item.q}<br><span style="color:var(--primary-color)">👉 ${item.a}</span></p>`;
-                storyReadText += `${item.q} ${item.a}. `;
+                storyHtml += `
+                <div style="margin-bottom: 15px;">
+                    <span id="final-q-${index}" class="final-text-segment">${item.q}</span><br>
+                    <span id="final-a-${index}" class="final-text-segment" style="color:var(--primary-color); font-weight:bold;">👉 ${item.a}</span>
+                </div>`;
             });
 
             document.getElementById('final-story').innerHTML = storyHtml;
-            document.getElementById('final-story').dataset.readText = storyReadText;
-            
             speak("You did it! What a funny story.");
         }
 
+        // --- Start the Final Reading Chain ---
         function readFullStory() {
-            const text = document.getElementById('final-story').dataset.readText;
             synth.cancel();
-            speak(text, null, 1.0);
+            cleanupHighlights();
+            readingIndex = 0;
+            readingType = 'q'; 
+            readNextSegment();
+        }
+
+        function readNextSegment() {
+            if (readingIndex >= userChoices.length) {
+                speak("The End!");
+                return;
+            }
+
+            const item = userChoices[readingIndex];
+            let textToSpeak, elementId;
+
+            if (readingType === 'q') {
+                textToSpeak = item.q;
+                elementId = `final-q-${readingIndex}`;
+            } else {
+                textToSpeak = item.a;
+                elementId = `final-a-${readingIndex}`;
+            }
+
+            const element = document.getElementById(elementId);
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('final-highlight');
+
+            speak(textToSpeak, () => {
+                element.classList.remove('final-highlight');
+                
+                if (readingType === 'q') {
+                    readingType = 'a'; 
+                } else {
+                    readingType = 'q'; 
+                    readingIndex++;
+                }
+                
+                readNextSegment();
+            });
         }
 
     </script>
