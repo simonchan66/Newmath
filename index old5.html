@@ -130,7 +130,7 @@
     }
 
     .expr{
-      font-size: 54px;
+      font-size: 34px;
       font-weight: 900;
       letter-spacing: .5px;
       display:flex;
@@ -139,7 +139,7 @@
     }
 
     .expr small{
-      font-size: 40px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--muted);
     }
@@ -165,7 +165,7 @@
     }
 
     .display .value{
-      font-size: 42px;
+      font-size: 22px;
       font-weight: 800;
       letter-spacing:.5px;
     }
@@ -246,7 +246,6 @@
       letter-spacing: .2px;
     }
     .key.ok{
-      grid-column: span 3;
       background: linear-gradient(180deg, rgba(39,209,127,.35), rgba(39,209,127,.15));
       border-color: rgba(39,209,127,.45);
     }
@@ -628,7 +627,7 @@
     }
 
     @media (max-height: 700px){
-      .expr{ font-size: 44px; }
+      .expr{ font-size: 30px; }
       .pad{ gap: 8px; }
       .key{ border-radius: 14px; }
     }
@@ -709,9 +708,8 @@
             <button class="key" data-key="7" type="button">7</button>
             <button class="key" data-key="8" type="button">8</button>
             <button class="key" data-key="9" type="button">9</button>
-            <button class="key action del" data-key="del" type="button">⌫ Del</button>
+            <button class="key action del" data-key="del" type="button">⌫ Delete</button>
             <button class="key" data-key="0" type="button">0</button>
-            <button class="key action" data-key="R" type="button">R</button>
             <button class="key action ok" data-key="ok" type="button">OK</button>
           </div>
         </div>
@@ -806,7 +804,7 @@
   const cardDetailNumber = el('cardDetailNumber');
   const cardDetailClose = el('cardDetailClose');
 
-  let mode = { type: "division", min: 2, max: 10, focus: 7 };
+  let mode = { type: "range", min: 2, max: 10, focus: 7 };
 
   let a = 2, b = 2;
   let currentOp = "×";
@@ -1059,13 +1057,7 @@
     msgEl.textContent = "Go!";
     bonusEl.textContent = "+0";
 
-    if (mode.type === "division") {
-      currentOp = '÷';
-      opEl.textContent = '÷';
-      a = randInt(1, 888);
-      b = randInt(1, 10);
-      modeBtn.textContent = "Division";
-    } else if (mode.type === "reception") {
+    if (mode.type === "reception") {
       const isAdd = Math.random() > 0.5;
       currentOp = isAdd ? '+' : '−';
       if (isAdd) {
@@ -1149,9 +1141,7 @@
   function calcPoints(){
     let base = 10;
     if (mode.type === "reception") base = 30;
-    if (mode.type === "division") base = 40;
-    let extra = Math.max(0, streak - 2) * 5;
-    if (mode.type === "division") extra *= 4;
+    const extra = Math.max(0, streak - 2) * 5;
     return { base, extra, total: base + extra };
   }
 
@@ -1159,20 +1149,16 @@
     if (locked) return;
     if (input.length === 0) { toast("Enter an answer"); return; }
 
-    let correctStr;
-    if (currentOp === '+') correctStr = String(a + b);
-    else if (currentOp === '−') correctStr = String(a - b);
-    else if (currentOp === '÷') {
-      const q = Math.floor(a / b);
-      const r = a % b;
-      correctStr = r === 0 ? String(q) : `${q}R${r}`;
-    } else correctStr = String(a * b);
+    let correct;
+    if (currentOp === '+') correct = a + b;
+    else if (currentOp === '−') correct = a - b;
+    else correct = a * b;
 
-    const guess = input.toUpperCase();
+    const guess = Number(input);
 
     locked = true;
 
-    if (guess === correctStr){
+    if (guess === correct){
       streak += 1;
       const pts = calcPoints();
       score += pts.total;
@@ -1220,7 +1206,7 @@
     }
 
     if (locked) return;
-    if (!/^\d$/.test(k) && k.toUpperCase() !== "R") return;
+    if (!/^\d$/.test(k)) return;
 
     // Auto-clear logic
     if (wasWrong) {
@@ -1230,19 +1216,16 @@
         msgEl.textContent = "Go!";
     }
 
-    if (input.length >= 6) return;
+    if (input.length >= 3) return;
 
-    if (input === "0" && k !== "R") input = "";
-    input += k.toUpperCase();
+    if (input === "0") input = "";
+    input += k;
     renderInput();
   }
 
   function toggleMode(){
     sfx.click();
-    if (mode.type === "division"){
-      mode.type = "range";
-      toast("2–10 Multiplication");
-    } else if (mode.type === "range"){
+    if (mode.type === "range"){
       mode.type = "reception";
       toast("Reception Mode (Easy)");
     } else if (mode.type === "reception"){
@@ -1252,8 +1235,8 @@
     } else {
       mode.focus += 1;
       if (mode.focus > 10){
-        mode.type = "division";
-        toast("Division Mode");
+        mode.type = "range";
+        toast("Back to 2–10");
       } else {
         toast(`Focus ${mode.focus}×`);
       }
